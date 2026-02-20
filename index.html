@@ -13,7 +13,10 @@
             background-color: var(--mks-dark); 
             background-image: radial-gradient(circle at 50% -20%, #3b0764 0%, transparent 50%);
             color: white; 
-            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .glass { 
             background: rgba(18, 18, 22, 0.8); 
@@ -27,7 +30,6 @@
         }
         .mks-input:focus { border-color: var(--mks-purple); box-shadow: 0 0 15px rgba(168, 85, 247, 0.15); }
         
-        /* Animações */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -42,11 +44,23 @@
         .error-shake { animation: shake 0.4s ease-in-out; border-color: #ef4444 !important; }
 
         .btn-pulse:active { transform: scale(0.96); }
+        .clickable-card { cursor: pointer; transition: transform 0.2s ease; }
+        .clickable-card:active { transform: scale(0.98); }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(to top, var(--mks-dark), transparent);
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="p-4">
 
-    <div id="login-screen" class="w-full max-w-sm animate-up">
+    <div id="login-screen" class="w-full max-w-sm mx-auto animate-up">
         <div class="text-center mb-10">
             <h2 class="text-xs uppercase tracking-[0.5em] text-purple-500 font-bold mb-2">Exclusive Access</h2>
             <h1 class="text-3xl font-bold tracking-tight">MKS <span class="text-purple-500">Tech Solutions</span></h1>
@@ -69,7 +83,7 @@
         </div>
     </div>
 
-    <div id="app" class="w-full max-w-md hidden opacity-0 transition-opacity duration-700">
+    <div id="app" class="w-full max-w-md mx-auto hidden opacity-0 transition-opacity duration-700 pb-24">
         <header class="flex justify-between items-end mb-6 px-2">
             <div>
                 <h1 class="text-2xl font-bold">MKS <span class="text-purple-500">Tech</span></h1>
@@ -94,9 +108,10 @@
                 <button id="btn-parc" onclick="setPaymentMode('parc')" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-gray-500 transition-all uppercase tracking-widest">Parcelado</button>
             </div>
 
-            <div id="vista-display" class="bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10 rounded-[2rem] p-8 text-center">
+            <div id="vista-display" onclick="sendWhatsApp()" class="clickable-card bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10 rounded-[2rem] p-8 text-center">
                 <div class="text-gray-400 text-[10px] uppercase tracking-widest mb-1">Preço Final PIX</div>
                 <div id="final-cash-price" class="text-5xl font-bold text-white tracking-tighter">R$ 0,00</div>
+                <p class="text-[8px] text-purple-400 mt-2 uppercase tracking-[0.2em] animate-pulse">Clique para enviar Orçamento</p>
             </div>
 
             <div id="parc-section" class="space-y-5 hidden">
@@ -119,14 +134,25 @@
                     <input type="range" id="installments" min="1" max="10" value="1" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none accent-purple-500" oninput="calculate()">
                 </div>
 
-                <div class="bg-purple-600 rounded-[2rem] p-7 text-center shadow-xl shadow-purple-900/20 border-t border-white/20">
+                <div onclick="sendWhatsApp()" class="clickable-card bg-purple-600 rounded-[2rem] p-7 text-center shadow-xl shadow-purple-900/20 border-t border-white/20">
                     <div class="text-white/60 text-[10px] mb-1 uppercase font-bold tracking-widest">Parcelas de</div>
                     <div id="parcela-val" class="text-4xl font-extrabold text-white mb-3">R$ 0,00</div>
-                    <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80">Total Financiado: <span id="total-val">R$ 0</span></div>
+                    <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80 mb-2">Total Financiado: <span id="total-val">R$ 0</span></div>
+                    <p class="text-[8px] text-white/50 uppercase tracking-[0.2em]">Clique para enviar Orçamento</p>
                 </div>
             </div>
         </div>
     </div>
+
+    <footer>
+        <p class="text-[10px] text-gray-500 tracking-[0.2em] font-semibold uppercase">
+            MKS Tech Solutions © 2026
+        </p>
+        <div class="flex justify-center items-center gap-2 mt-1">
+            <span class="w-1 h-1 bg-green-500 rounded-full animate-pulse"></span>
+            <span class="text-[8px] text-gray-600 tracking-widest uppercase">Sistema Criptografado</span>
+        </div>
+    </footer>
 
     <script>
         const DATA = {
@@ -149,6 +175,7 @@
 
         let currentCategory = 'novos';
         let currentMode = 'vista';
+        let currentResult = {}; // Armazena dados atuais para o zap
 
         function login() {
             const passInput = document.getElementById('pass');
@@ -210,8 +237,12 @@
             const precoOriginal = parseFloat(select.value);
             const modelName = select.options[select.selectedIndex].text;
             
+            currentResult = { modelo: modelName, categoria: currentCategory.toUpperCase() };
+
             if(currentMode === 'vista') {
                 document.getElementById('final-cash-price').innerText = `R$ ${precoOriginal.toLocaleString('pt-BR')}`;
+                currentResult.total = precoOriginal;
+                currentResult.modo = "À VISTA (PIX)";
             } else {
                 const entrada = getEntry(modelName, precoOriginal);
                 const parcelas = parseInt(document.getElementById('installments').value);
@@ -228,11 +259,37 @@
                 document.getElementById('remainder-price').innerText = `R$ ${saldo.toLocaleString('pt-BR', {maximumFractionDigits: 0})}`;
                 document.getElementById('parcela-val').innerText = `R$ ${valorParcela.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
                 document.getElementById('total-val').innerText = `R$ ${(totalFinanciado + entrada).toLocaleString('pt-BR', {maximumFractionDigits: 0})}`;
+
+                currentResult.modo = "PARCELADO";
+                currentResult.entrada = entrada;
+                currentResult.parcelas = parcelas;
+                currentResult.valorParcela = valorParcela;
+                currentResult.totalFinal = totalFinanciado + entrada;
             }
+        }
+
+        function sendWhatsApp() {
+            const f = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+            let msg = `*MKS TECH SOLUTIONS - ORÇAMENTO*%0A%0A`;
+            msg += `*Aparelho:* ${currentResult.modelo} (${currentResult.categoria})%0A`;
+            msg += `*Condição:* ${currentResult.modo}%0A%0A`;
+
+            if (currentMode === 'vista') {
+                msg += `*Valor Final:* ${f.format(currentResult.total)}%0A`;
+            } else {
+                msg += `*Entrada:* ${f.format(currentResult.entrada)}%0A`;
+                msg += `*Plano:* ${currentResult.parcelas}x de ${f.format(currentResult.valorParcela)}%0A`;
+                msg += `*Valor Total:* ${f.format(currentResult.totalFinal)}%0A`;
+            }
+
+            msg += `%0A_Orçamento gerado pelo Portal MKS Solutions._`;
+            
+            const url = `https://wa.me/555132884938?text=${msg}`;
+            window.open(url, '_blank');
         }
     </script>
     <style>
-        .tab-active { background-color: var(--mks-purple) !important; color: white !important; shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
+        .tab-active { background-color: var(--mks-purple) !important; color: white !important; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
     </style>
 </body>
 </html>
