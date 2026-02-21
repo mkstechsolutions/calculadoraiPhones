@@ -57,12 +57,13 @@
             background: linear-gradient(to top, var(--mks-dark), transparent);
         }
 
-        /* ESTILOS DE COMPARAÇÃO E ECONOMIA */
         .comparison-active { border: 2px solid var(--mks-purple) !important; background: rgba(168, 85, 247, 0.1) !important; }
         .saving-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; margin-top: 8px; }
         .saving-fill { height: 100%; background: linear-gradient(90deg, #a855f7, #ec4899); transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1); width: 0%; }
-        #vista-display { transition: filter 0.2s ease, transform 0.2s ease; }
-        .diff-tag { font-size: 10px; font-weight: bold; padding: 2px 8px; border-radius: 6px; }
+        
+        .diff-badge { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        .diff-up { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .diff-down { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
     </style>
 </head>
 <body class="p-4">
@@ -101,18 +102,24 @@
 
         <div class="glass rounded-[2.5rem] p-6 space-y-5 shadow-2xl border-t border-white/10">
             
-            <div id="comp-info" class="hidden bg-purple-500/10 border border-purple-500/20 p-4 rounded-2xl animate-up space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-[9px] text-purple-400 uppercase font-bold tracking-widest">Modelo de Referência</span>
-                    <button onclick="clearComparison()" class="text-[9px] text-gray-400 hover:text-white underline">Limpar</button>
-                </div>
-                <div class="flex justify-between items-center">
+            <div id="comp-info" class="hidden bg-white/[0.03] border border-purple-500/30 p-4 rounded-2xl animate-up">
+                <div class="flex justify-between items-start mb-3">
                     <div>
-                        <span id="comp-text" class="text-sm text-white font-semibold"></span>
-                        <span id="comp-price-label" class="block text-[10px] text-gray-400"></span>
+                        <span class="text-[8px] text-purple-400 uppercase font-black tracking-widest">Referência Fixada</span>
+                        <h4 id="comp-text" class="text-sm font-bold text-white"></h4>
                     </div>
-                    <div id="diff-container" class="text-right">
-                        </div>
+                    <button onclick="clearComparison()" class="bg-white/5 p-1 px-2 rounded-lg text-[8px] uppercase font-bold hover:bg-white/10">Limpar</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-black/20 p-2 rounded-xl border border-white/5">
+                        <span class="text-[8px] text-gray-500 block uppercase">Dif. Mensal</span>
+                        <div id="diff-parc-val" class="text-[11px] font-bold mt-1">--</div>
+                    </div>
+                    <div class="bg-black/20 p-2 rounded-xl border border-white/5">
+                        <span class="text-[8px] text-gray-500 block uppercase">Dif. Total</span>
+                        <div id="diff-total-val" class="text-[11px] font-bold mt-1">--</div>
+                    </div>
                 </div>
             </div>
 
@@ -124,9 +131,9 @@
             <div class="relative">
                 <label class="block text-[10px] text-gray-500 uppercase mb-2 ml-1 tracking-tighter">Escolha o Modelo</label>
                 <div class="flex gap-2">
-                    <select id="model-select" onchange="calculate()" class="mks-input flex-1 p-4 rounded-2xl font-semibold appearance-none outline-none"></select>
-                    <button onclick="startComparison()" id="btn-comp-trigger" class="mks-input px-4 rounded-2xl hover:bg-purple-500/20 transition-all text-purple-500 font-bold text-xs">
-                        FIXAR
+                    <select id="model-select" onchange="calculate()" class="mks-input flex-1 p-4 rounded-2xl font-semibold appearance-none outline-none text-sm"></select>
+                    <button onclick="startComparison()" id="btn-comp-trigger" class="mks-input px-4 rounded-2xl hover:bg-purple-500/20 transition-all text-purple-500 font-bold text-[10px] uppercase">
+                        Fixar
                     </button>
                 </div>
             </div>
@@ -147,7 +154,6 @@
                     </div>
                     <div class="saving-bar"><div id="saving-fill" class="saving-fill"></div></div>
                 </div>
-
                 <p class="text-[8px] text-purple-400 mt-4 uppercase tracking-[0.2em] animate-pulse">Clique para enviar Orçamento</p>
             </div>
 
@@ -171,7 +177,7 @@
                     <input type="range" id="installments" min="1" max="10" value="1" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none accent-purple-500" oninput="calculate()">
                 </div>
 
-                <div onclick="sendWhatsApp()" class="clickable-card bg-purple-600 rounded-[2rem] p-7 text-center shadow-xl shadow-purple-900/20 border-t border-white/20">
+                <div id="parc-card" onclick="sendWhatsApp()" class="clickable-card bg-purple-600 rounded-[2rem] p-7 text-center shadow-xl shadow-purple-900/20 border-t border-white/20">
                     <div class="text-white/60 text-[10px] mb-1 uppercase font-bold tracking-widest">Parcelas de</div>
                     <div id="parcela-val" class="text-4xl font-extrabold text-white mb-3">R$ 0,00</div>
                     <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80 mb-2">Total Financiado: <span id="total-val">R$ 0,00</span></div>
@@ -258,15 +264,17 @@
             calculate();
         }
 
-        // LÓGICA DE COMPARAÇÃO ATUALIZADA (MOSTRANDO DIFERENÇA)
+        // FIXAR ESTADO PARA COMPARAÇÃO
         function startComparison() {
             const select = document.getElementById('model-select');
             comparedModel = {
                 modelo: select.options[select.selectedIndex].text,
-                preco: parseFloat(select.value)
+                modo: currentMode,
+                total: currentResult.totalFinal || currentResult.total,
+                parcelas: currentResult.parcelas || 1,
+                valorParcela: currentResult.valorParcela || currentResult.total
             };
-            document.getElementById('comp-text').innerText = comparedModel.modelo;
-            document.getElementById('comp-price-label').innerText = "Preço Base: " + formatter.format(comparedModel.preco);
+            document.getElementById('comp-text').innerText = comparedModel.modelo + " (" + (comparedModel.modo === 'vista' ? 'À Vista' : comparedModel.parcelas + 'x') + ")";
             document.getElementById('comp-info').classList.remove('hidden');
             select.classList.add('comparison-active');
             calculate();
@@ -298,51 +306,21 @@
             
             currentResult = { modelo: modelName, categoria: currentCategory.toUpperCase() };
 
-            // FEEDBACK VISUAL
-            const display = document.getElementById('vista-display');
-            display.style.filter = "brightness(1.4)";
-            setTimeout(() => display.style.filter = "brightness(1)", 150);
-
-            // CÁLCULO DA DIFERENÇA NO MODO COMPARAÇÃO
-            const diffContainer = document.getElementById('diff-container');
-            if (comparedModel) {
-                const diff = precoOriginal - comparedModel.preco;
-                const isMore = diff > 0;
-                const isLess = diff < 0;
-                
-                if (diff === 0) {
-                    diffContainer.innerHTML = `<span class="text-[10px] text-gray-500 uppercase">Mesmo valor</span>`;
-                } else {
-                    const colorClass = isMore ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400';
-                    const prefix = isMore ? '+' : '';
-                    diffContainer.innerHTML = `
-                        <span class="text-[8px] text-gray-500 uppercase block mb-1">Diferença</span>
-                        <span class="diff-tag ${colorClass}">${prefix}${formatter.format(diff)}</span>
-                    `;
-                }
-            }
-
             if(currentMode === 'vista') {
                 document.getElementById('final-cash-price').innerText = formatter.format(precoOriginal);
                 currentResult.total = precoOriginal;
                 currentResult.modo = "À VISTA (PIX)";
-
+                
                 document.getElementById('economy-section').classList.remove('hidden');
                 const economia = precoOriginal * 0.12;
                 document.getElementById('economy-value').innerText = formatter.format(economia);
                 setTimeout(() => document.getElementById('saving-fill').style.width = "85%", 50);
-
             } else {
-                document.getElementById('economy-section').classList.add('hidden');
-                document.getElementById('saving-fill').style.width = "0%";
-                
                 const entrada = getEntry(modelName, precoOriginal);
                 const parcelas = parseInt(document.getElementById('installments').value);
                 const saldo = precoOriginal - entrada;
-                
                 let lucro = (parcelas <= 3) ? 300 : (parcelas <= 6) ? 600 : 1000;
                 const taxaMaquinaCoef = 1 + (parcelas * 0.015); 
-                
                 const totalFinanciado = (saldo + lucro) * taxaMaquinaCoef;
                 const valorParcela = totalFinanciado / parcelas;
 
@@ -352,18 +330,44 @@
                 document.getElementById('parcela-val').innerText = formatter.format(valorParcela);
                 document.getElementById('total-val').innerText = formatter.format(totalFinanciado + entrada);
 
-                currentResult.modo = "PARCELADO";
-                currentResult.entrada = entrada;
-                currentResult.parcelas = parcelas;
-                currentResult.valorParcela = valorParcela;
                 currentResult.totalFinal = totalFinanciado + entrada;
+                currentResult.valorParcela = valorParcela;
+                currentResult.parcelas = parcelas;
+                currentResult.modo = "PARCELADO";
+            }
+
+            // ATUALIZAR COMPARAÇÃO DUPLA (PARCELA E TOTAL)
+            if (comparedModel) {
+                const diffTotal = (currentResult.totalFinal || currentResult.total) - comparedModel.total;
+                const diffParc = (currentResult.valorParcela || currentResult.total) - comparedModel.valorParcela;
+                
+                updateDiffElement('diff-total-val', diffTotal);
+                updateDiffElement('diff-parc-val', diffParc);
+            }
+        }
+
+        function updateDiffElement(id, diff) {
+            const el = document.getElementById(id);
+            const isZero = Math.abs(diff) < 0.1;
+            const isNegative = diff < 0;
+
+            if (isZero) {
+                el.innerHTML = `<span class="text-gray-500">Igual</span>`;
+            } else {
+                const badgeClass = isNegative ? 'diff-down' : 'diff-up';
+                const prefix = isNegative ? '' : '+';
+                const label = isNegative ? 'Economia' : 'Acréscimo';
+                el.innerHTML = `
+                    <div class="diff-badge ${badgeClass}">${prefix}${formatter.format(diff)}</div>
+                    <span class="block text-[7px] text-gray-500 mt-0.5 uppercase tracking-tighter">${label}</span>
+                `;
             }
         }
 
         function sendWhatsApp() {
             let msg = `*MKS TECH SOLUTIONS - ORÇAMENTO*%0A%0A`;
             msg += `*Aparelho:* ${currentResult.modelo} (${currentResult.categoria})%0A`;
-            if (comparedModel) msg += `_Comparado com ${comparedModel.modelo}_%0A`;
+            if (comparedModel) msg += `_Comparativo Ref: ${comparedModel.modelo}_%0A`;
             msg += `*Condição:* ${currentResult.modo}%0A%0A`;
 
             if (currentMode === 'vista') {
