@@ -118,11 +118,11 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
                         <span class="text-gray-500 text-[9px] block uppercase tracking-widest">Entrada</span>
-                        <span id="entry-price" class="text-lg font-bold text-purple-400">R$ 0</span>
+                        <span id="entry-price" class="text-lg font-bold text-purple-400">R$ 0,00</span>
                     </div>
                     <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
                         <span class="text-gray-500 text-[9px] block uppercase tracking-widest">Saldo</span>
-                        <span id="remainder-price" class="text-lg font-bold text-gray-100">R$ 0</span>
+                        <span id="remainder-price" class="text-lg font-bold text-gray-100">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -137,7 +137,7 @@
                 <div onclick="sendWhatsApp()" class="clickable-card bg-purple-600 rounded-[2rem] p-7 text-center shadow-xl shadow-purple-900/20 border-t border-white/20">
                     <div class="text-white/60 text-[10px] mb-1 uppercase font-bold tracking-widest">Parcelas de</div>
                     <div id="parcela-val" class="text-4xl font-extrabold text-white mb-3">R$ 0,00</div>
-                    <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80 mb-2">Total Financiado: <span id="total-val">R$ 0</span></div>
+                    <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80 mb-2">Total Financiado: <span id="total-val">R$ 0,00</span></div>
                     <p class="text-[8px] text-white/50 uppercase tracking-[0.2em]">Clique para enviar Orçamento</p>
                 </div>
             </div>
@@ -145,13 +145,7 @@
     </div>
 
     <footer>
-        <p class="text-[10px] text-gray-500 tracking-[0.2em] font-semibold uppercase">
-            MKS Tech Solutions © 2026
-        </p>
-        <div class="flex justify-center items-center gap-2 mt-1">
-            <span class="w-1 h-1 bg-green-500 rounded-full animate-pulse"></span>
-            <span class="text-[8px] text-gray-600 tracking-widest uppercase">Sistema Criptografado</span>
-        </div>
+        <p class="text-[10px] text-gray-500 tracking-[0.2em] font-semibold uppercase">MKS Tech Solutions © 2026</p>
     </footer>
 
     <script>
@@ -175,21 +169,24 @@
 
         let currentCategory = 'novos';
         let currentMode = 'vista';
-        let currentResult = {}; // Armazena dados atuais para o zap
+        let currentResult = {};
+
+        const formatter = new Intl.NumberFormat('pt-BR', {
+            style: 'currency', currency: 'BRL', minimumFractionDigits: 2
+        });
 
         function login() {
-            const passInput = document.getElementById('pass');
-            if(passInput.value === "clienteVIP") {
+            if(document.getElementById('pass').value === "clienteVIP") {
                 document.getElementById('login-screen').style.display = 'none';
                 const app = document.getElementById('app');
                 app.classList.remove('hidden');
                 setTimeout(() => app.classList.add('opacity-100'), 50);
                 loadModels();
             } else {
-                passInput.classList.add('error-shake');
+                document.getElementById('pass').classList.add('error-shake');
                 document.getElementById('err-msg').style.opacity = '1';
                 setTimeout(() => {
-                    passInput.classList.remove('error-shake');
+                    document.getElementById('pass').classList.remove('error-shake');
                     document.getElementById('err-msg').style.opacity = '0';
                 }, 1000);
             }
@@ -224,8 +221,19 @@
         }
 
         function getEntry(modelName, price) {
-            if (price > 6000) return price * 0.5;
             const name = modelName.toLowerCase();
+            const isSeminovo = currentCategory === 'seminovos';
+
+            // REGRAS ESPECÍFICAS DA LINHA 16
+            if (name === "iphone 16") {
+                return isSeminovo ? 1800 : 2000;
+            }
+            if (name === "iphone 16 pro" && isSeminovo) {
+                return 2500;
+            }
+
+            // REGRAS GERAIS (Fallback)
+            if (price > 6000) return price * 0.5;
             if (name.includes('pro')) return 2000;
             if (name.includes('15')) return 1500;
             if (name.includes('14')) return 1300;
@@ -240,7 +248,7 @@
             currentResult = { modelo: modelName, categoria: currentCategory.toUpperCase() };
 
             if(currentMode === 'vista') {
-                document.getElementById('final-cash-price').innerText = `R$ ${precoOriginal.toLocaleString('pt-BR')}`;
+                document.getElementById('final-cash-price').innerText = formatter.format(precoOriginal);
                 currentResult.total = precoOriginal;
                 currentResult.modo = "À VISTA (PIX)";
             } else {
@@ -255,10 +263,10 @@
                 const valorParcela = totalFinanciado / parcelas;
 
                 document.getElementById('qty-label').innerText = parcelas + 'x';
-                document.getElementById('entry-price').innerText = `R$ ${entrada.toLocaleString('pt-BR', {maximumFractionDigits: 0})}`;
-                document.getElementById('remainder-price').innerText = `R$ ${saldo.toLocaleString('pt-BR', {maximumFractionDigits: 0})}`;
-                document.getElementById('parcela-val').innerText = `R$ ${valorParcela.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-                document.getElementById('total-val').innerText = `R$ ${(totalFinanciado + entrada).toLocaleString('pt-BR', {maximumFractionDigits: 0})}`;
+                document.getElementById('entry-price').innerText = formatter.format(entrada);
+                document.getElementById('remainder-price').innerText = formatter.format(saldo);
+                document.getElementById('parcela-val').innerText = formatter.format(valorParcela);
+                document.getElementById('total-val').innerText = formatter.format(totalFinanciado + entrada);
 
                 currentResult.modo = "PARCELADO";
                 currentResult.entrada = entrada;
@@ -269,27 +277,24 @@
         }
 
         function sendWhatsApp() {
-            const f = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
             let msg = `*MKS TECH SOLUTIONS - ORÇAMENTO*%0A%0A`;
             msg += `*Aparelho:* ${currentResult.modelo} (${currentResult.categoria})%0A`;
             msg += `*Condição:* ${currentResult.modo}%0A%0A`;
 
             if (currentMode === 'vista') {
-                msg += `*Valor Final:* ${f.format(currentResult.total)}%0A`;
+                msg += `*Valor Final:* ${formatter.format(currentResult.total)}%0A`;
             } else {
-                msg += `*Entrada:* ${f.format(currentResult.entrada)}%0A`;
-                msg += `*Plano:* ${currentResult.parcelas}x de ${f.format(currentResult.valorParcela)}%0A`;
-                msg += `*Valor Total:* ${f.format(currentResult.totalFinal)}%0A`;
+                msg += `*Entrada:* ${formatter.format(currentResult.entrada)}%0A`;
+                msg += `*Plano:* ${currentResult.parcelas}x de ${formatter.format(currentResult.valorParcela)}%0A`;
+                msg += `*Valor Total:* ${formatter.format(currentResult.totalFinal)}%0A`;
             }
-
-            msg += `%0A_Orçamento gerado pelo Portal MKS Tech Solutions._`;
             
-            const url = `https://wa.me/555132884938?text=${msg}`;
-            window.open(url, '_blank');
+            msg += `%0A_Orçamento gerado pelo Portal MKS Solutions._`;
+            window.open(`https://wa.me/555132884938?text=${msg}`, '_blank');
         }
     </script>
     <style>
-        .tab-active { background-color: var(--mks-purple) !important; color: white !important; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3); }
+        .tab-active { background-color: var(--mks-purple) !important; color: white !important; }
     </style>
 </body>
 </html>
