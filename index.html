@@ -64,6 +64,7 @@
         .diff-badge { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; display: inline-block; }
         .diff-up { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
         .diff-down { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+        .tab-active { background-color: var(--mks-purple) !important; color: white !important; }
     </style>
 </head>
 <body class="p-4">
@@ -131,9 +132,9 @@
             <div class="relative">
                 <label class="block text-[10px] text-gray-500 uppercase mb-2 ml-1 tracking-tighter">Escolha o Modelo</label>
                 <div class="flex gap-2">
-                    <select id="model-select" onchange="calculate()" class="mks-input flex-1 p-4 rounded-2xl font-semibold appearance-none outline-none text-sm"></select>
+                    <select id="model-select" onchange="calculate()" class="mks-input flex-1 p-4 rounded-2xl font-semibold appearance-none outline-none text-sm bg-zinc-900"></select>
                     <button onclick="startComparison()" id="btn-comp-trigger" class="mks-input px-4 rounded-2xl hover:bg-purple-500/20 transition-all text-purple-500 font-bold text-[10px] uppercase">
-                        Comparar
+                        Fixar
                     </button>
                 </div>
             </div>
@@ -192,23 +193,8 @@
     </footer>
 
     <script>
-        const DATA = {
-            "novos": [
-                {"modelo": "iPhone 17 Pro Max", "preco": 10999}, {"modelo": "iPhone 17 Pro", "preco": 9799},
-                {"modelo": "iPhone 17", "preco": 6999}, 
-                {"modelo": "iPhone 16", "preco": 4999},
-                {"modelo": "iPhone 15", "preco": 4399}, {"modelo": "iPhone 14", "preco": 3799}
-            ],
-            "seminovos": [
-                {"modelo": "iPhone 16 Pro Max", "preco": 6999}, {"modelo": "iPhone 16 Pro", "preco": 5999},
-                {"modelo": "iPhone 16", "preco": 4290}, {"modelo": "iPhone 15 Pro Max", "preco": 5799},
-                {"modelo": "iPhone 15 Pro", "preco": 5799}, {"modelo": "iPhone 15", "preco": 3299},
-                {"modelo": "iPhone 14 Pro Max", "preco": 4699}, {"modelo": "iPhone 14 Pro", "preco": 3699},
-                {"modelo": "iPhone 14", "preco": 2899}, {"modelo": "iPhone 13 Pro Max", "preco": 3599},
-                {"modelo": "iPhone 13 Pro", "preco": 3100}, {"modelo": "iPhone 13", "preco": 2299}
-            ]
-        };
-
+        const URL_API = "https://script.google.com/macros/s/AKfycbz8nFm1oqgzqwWI-TmdZmV1b1Gaw3Ekotxaygk6EmT8hI0c340MWYOvrhLJzsjSNnSo/exec";
+        let dadosGlobais = [];
         let currentCategory = 'novos';
         let currentMode = 'vista';
         let currentResult = {};
@@ -218,13 +204,23 @@
             style: 'currency', currency: 'BRL', minimumFractionDigits: 2
         });
 
+        async function carregarDados() {
+            try {
+                const res = await fetch(URL_API);
+                dadosGlobais = await res.json();
+                loadModels();
+            } catch (err) {
+                console.error("Erro ao carregar BD:", err);
+            }
+        }
+
         function login() {
             if(document.getElementById('pass').value === "clientesMKS") {
                 document.getElementById('login-screen').style.display = 'none';
                 const app = document.getElementById('app');
                 app.classList.remove('hidden');
                 setTimeout(() => app.classList.add('opacity-100'), 50);
-                loadModels();
+                carregarDados();
             } else {
                 document.getElementById('pass').classList.add('error-shake');
                 document.getElementById('err-msg').style.opacity = '1';
@@ -254,10 +250,19 @@
         function loadModels() {
             const select = document.getElementById('model-select');
             select.innerHTML = '';
-            DATA[currentCategory].forEach(item => {
+            
+            // Filtra os dados da planilha conforme a aba Novos ou Seminovos
+            const filtrados = dadosGlobais.filter(item => {
+                const tipo = (item.tipo || "").toString().trim().toLowerCase();
+                return tipo === currentCategory;
+            });
+
+            filtrados.forEach(item => {
                 let opt = document.createElement('option');
-                opt.value = item.preco;
-                opt.text = item.modelo;
+                // Limpa o preço caso venha com R$ ou pontos da planilha
+                let precoLimpo = item.preco.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
+                opt.value = parseFloat(precoLimpo);
+                opt.text = `${item.modelo} - ${item.capacidade}`;
                 select.add(opt);
             });
             calculate();
@@ -288,10 +293,10 @@
         function getEntry(modelName, price) {
             const name = modelName.toLowerCase();
             const isSeminovo = currentCategory === 'seminovos';
-            if (name === "iphone 16") return isSeminovo ? 1800 : 2000;
-            if (name === "iphone 16 pro" && isSeminovo) return 2500;
+            if (name.includes("16 pro max")) return isSeminovo ? 3500 : 4500;
+            if (name.includes("16 pro")) return isSeminovo ? 3000 : 4000;
+            if (name.includes("16")) return isSeminovo ? 1800 : 2000;
             if (price > 6000) return price * 0.5;
-            if (name.includes('pro')) return 2000;
             if (name.includes('15')) return 1500;
             if (name.includes('14')) return 1300;
             return 1000;
@@ -299,6 +304,8 @@
 
         function calculate() {
             const select = document.getElementById('model-select');
+            if(!select.value) return;
+
             const precoOriginal = parseFloat(select.value);
             const modelName = select.options[select.selectedIndex].text;
             
@@ -317,6 +324,8 @@
                 const entrada = getEntry(modelName, precoOriginal);
                 const parcelas = parseInt(document.getElementById('installments').value);
                 const saldo = precoOriginal - entrada;
+                
+                // Suas regras de taxas: 30% lucro (base) e taxas de máquina
                 let lucro = (parcelas <= 3) ? 300 : (parcelas <= 6) ? 600 : 1000;
                 const taxaMaquinaCoef = 1 + (parcelas * 0.015); 
                 const totalFinanciado = (saldo + lucro) * taxaMaquinaCoef;
@@ -330,6 +339,7 @@
 
                 currentResult.totalFinal = totalFinanciado + entrada;
                 currentResult.valorParcela = valorParcela;
+                currentResult.entrada = entrada;
                 currentResult.parcelas = parcelas;
                 currentResult.modo = "PARCELADO";
             }
@@ -354,12 +364,9 @@
                 const badgeClass = isNegative ? 'diff-down' : 'diff-up';
                 const prefix = isNegative ? '' : '+';
                 
-                let subText = "";
-                if(type === "mensal") {
-                    subText = isNegative ? "Menos por mês" : "A mais por mês";
-                } else {
-                    subText = isNegative ? "Economia Total" : "Acréscimo no Total";
-                }
+                let subText = type === "mensal" ? 
+                    (isNegative ? "Menos por mês" : "A mais por mês") : 
+                    (isNegative ? "Economia Total" : "Acréscimo no Total");
 
                 el.innerHTML = `
                     <div class="diff-badge ${badgeClass}">${prefix}${formatter.format(Math.abs(diff))}</div>
@@ -385,8 +392,5 @@
             window.open(`https://wa.me/555132884938?text=${msg}`, '_blank');
         }
     </script>
-    <style>
-        .tab-active { background-color: var(--mks-purple) !important; color: white !important; }
-    </style>
 </body>
 </html>
