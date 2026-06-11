@@ -6,66 +6,7 @@
     <title>Calculadora MKS Tech</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --mks-purple: #a855f7; --mks-dark: #09090b; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--mks-dark); 
-            background-image: radial-gradient(circle at 50% -20%, #3b0764 0%, transparent 50%);
-            color: white; 
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .glass { 
-            background: rgba(18, 18, 22, 0.8); 
-            backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-        }
-        .mks-input { 
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid rgba(168, 85, 247, 0.3); 
-            transition: all 0.3s ease;
-        }
-        .mks-input:focus { border-color: var(--mks-purple); box-shadow: 0 0 15px rgba(168, 85, 247, 0.15); }
-        
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-up { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
-        }
-        .error-shake { animation: shake 0.4s ease-in-out; border-color: #ef4444 !important; }
-
-        .btn-pulse:active { transform: scale(0.96); }
-        .clickable-card { cursor: pointer; transition: transform 0.2s ease; }
-        .clickable-card:active { transform: scale(0.98); }
-
-        footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 20px;
-            text-align: center;
-            background: linear-gradient(to top, var(--mks-dark), transparent);
-        }
-
-        .comparison-active { border: 2px solid var(--mks-purple) !important; background: rgba(168, 85, 247, 0.1) !important; }
-        .saving-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.05); overflow: hidden; margin-top: 8px; }
-        .saving-fill { height: 100%; background: linear-gradient(90deg, #a855f7, #ec4899); transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1); width: 0%; }
-        
-        .diff-badge { font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; display: inline-block; }
-        .diff-up { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
-        .diff-down { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
-        .tab-active { background-color: var(--mks-purple) !important; color: white !important; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="p-4">
 
@@ -129,8 +70,16 @@
                 <button id="btn-seminovos" onclick="setCategory('seminovos')" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-gray-500 transition-all uppercase tracking-widest">Seminovos</button>
             </div>
 
+            <div>
+                <label id="budget-label" class="block text-[10px] text-gray-500 uppercase mb-2 ml-1 tracking-tighter">Quanto o cliente tem de entrada? (Opcional)</label>
+                <div class="relative flex items-center">
+                    <span class="absolute left-4 text-sm font-semibold text-purple-500">R$</span>
+                    <input type="number" id="budget-input" oninput="loadModels()" class="mks-input w-full pl-10 pr-4 py-3.5 rounded-2xl font-semibold outline-none text-sm bg-zinc-900 text-white" placeholder="Ex: 2000">
+                </div>
+            </div>
+
             <div class="relative">
-                <label class="block text-[10px] text-gray-500 uppercase mb-2 ml-1 tracking-tighter">Escolha o Modelo</label>
+                <label class="block text-[10px] text-gray-500 uppercase mb-2 ml-1 tracking-tighter">Escolha o Modelo Disponível</label>
                 <div class="flex gap-2">
                     <select id="model-select" onchange="calculate()" class="mks-input flex-1 p-4 rounded-2xl font-semibold appearance-none outline-none text-sm bg-zinc-900"></select>
                     <button onclick="startComparison()" id="btn-comp-trigger" class="mks-input px-4 rounded-2xl hover:bg-purple-500/20 transition-all text-purple-500 font-bold text-[10px] uppercase">
@@ -141,16 +90,16 @@
 
             <div class="flex bg-black/40 rounded-2xl p-1.5 border border-white/5">
                 <button id="btn-vista" onclick="setPaymentMode('vista')" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-gray-500 transition-all tab-active uppercase tracking-widest">À Vista</button>
-                <button id="btn-parc" onclick="setPaymentMode('parc')" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-gray-500 transition-all uppercase tracking-widest">Parcelado</button>
+                <button id="btn-parc" onclick="setPaymentMode('parc')" class="flex-1 py-2.5 rounded-xl text-[10px] font-bold text-gray-500 transition-all uppercase tracking-widest">PIX Mensal</button>
             </div>
 
             <div id="vista-display" onclick="sendWhatsApp()" class="clickable-card bg-gradient-to-b from-white/[0.05] to-transparent border border-white/10 rounded-[2rem] p-8 text-center">
-                <div class="text-gray-400 text-[10px] uppercase tracking-widest mb-1">Preço Final PIX</div>
+                <div class="text-gray-400 text-[10px] uppercase tracking-widest mb-1">Preço Final PIX à Vista</div>
                 <div id="final-cash-price" class="text-5xl font-bold text-white tracking-tighter">R$ 0,00</div>
                 
                 <div id="economy-section" class="mt-6 space-y-1 hidden">
                     <div class="flex justify-between items-end px-1">
-                        <span class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Economia no PIX</span>
+                        <span class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Economia s/ Parcelado</span>
                         <span id="economy-value" class="text-[10px] text-white font-semibold">R$ 0,00</span>
                     </div>
                     <div class="saving-bar"><div id="saving-fill" class="saving-fill"></div></div>
@@ -161,27 +110,27 @@
             <div id="parc-section" class="space-y-5 hidden">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
-                        <span class="text-gray-500 text-[9px] block uppercase tracking-widest">Entrada</span>
+                        <span class="text-gray-500 text-[9px] block uppercase tracking-widest">Entrada Mínima</span>
                         <span id="entry-price" class="text-lg font-bold text-purple-400">R$ 0,00</span>
                     </div>
                     <div class="bg-black/40 rounded-2xl p-4 border border-white/5">
-                        <span class="text-gray-500 text-[9px] block uppercase tracking-widest">Saldo</span>
+                        <span class="text-gray-500 text-[9px] block uppercase tracking-widest">Saldo Restante</span>
                         <span id="remainder-price" class="text-lg font-bold text-gray-100">R$ 0,00</span>
                     </div>
                 </div>
 
                 <div class="px-2">
                     <div class="flex justify-between mb-4">
-                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Plano Mensal</label>
+                        <label class="text-[10px] text-gray-500 uppercase tracking-widest">Plano PIX Mensal</label>
                         <span id="qty-label" class="text-purple-500 font-bold text-xl">1x</span>
                     </div>
                     <input type="range" id="installments" min="1" max="10" value="1" class="w-full h-1.5 bg-gray-800 rounded-lg appearance-none accent-purple-500" oninput="calculate()">
                 </div>
 
                 <div id="parc-card" onclick="sendWhatsApp()" class="clickable-card bg-purple-600 rounded-[2rem] p-7 text-center shadow-xl shadow-purple-900/20 border-t border-white/20">
-                    <div class="text-white/60 text-[10px] mb-1 uppercase font-bold tracking-widest">Parcelas de</div>
+                    <div class="text-white/60 text-[10px] mb-1 uppercase font-bold tracking-widest">Mensalidades PIX de</div>
                     <div id="parcela-val" class="text-4xl font-extrabold text-white mb-3">R$ 0,00</div>
-                    <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80 mb-2">Total Financiado: <span id="total-val">R$ 0,00</span></div>
+                    <div class="text-[9px] text-purple-200 uppercase font-semibold opacity-80 mb-2">Total do Parcelamento: <span id="total-val">R$ 0,00</span></div>
                     <p class="text-[8px] text-white/50 uppercase tracking-[0.2em]">Clique para enviar Orçamento</p>
                 </div>
             </div>
@@ -192,205 +141,6 @@
         <p class="text-[10px] text-gray-500 tracking-[0.2em] font-semibold uppercase">MKS Tech Solutions © 2026</p>
     </footer>
 
-    <script>
-        const URL_API = "https://script.google.com/macros/s/AKfycbz8nFm1oqgzqwWI-TmdZmV1b1Gaw3Ekotxaygk6EmT8hI0c340MWYOvrhLJzsjSNnSo/exec";
-        let dadosGlobais = [];
-        let currentCategory = 'novos';
-        let currentMode = 'vista';
-        let currentResult = {};
-        let comparedModel = null;
-
-        const formatter = new Intl.NumberFormat('pt-BR', {
-            style: 'currency', currency: 'BRL', minimumFractionDigits: 2
-        });
-
-        async function carregarDados() {
-            try {
-                const res = await fetch(URL_API);
-                dadosGlobais = await res.json();
-                loadModels();
-            } catch (err) {
-                console.error("Erro ao carregar BD:", err);
-            }
-        }
-
-        function login() {
-            if(document.getElementById('pass').value === "clientesMKS") {
-                document.getElementById('login-screen').style.display = 'none';
-                const app = document.getElementById('app');
-                app.classList.remove('hidden');
-                setTimeout(() => app.classList.add('opacity-100'), 50);
-                carregarDados();
-            } else {
-                document.getElementById('pass').classList.add('error-shake');
-                document.getElementById('err-msg').style.opacity = '1';
-                setTimeout(() => {
-                    document.getElementById('pass').classList.remove('error-shake');
-                    document.getElementById('err-msg').style.opacity = '0';
-                }, 1000);
-            }
-        }
-
-        function setCategory(cat) {
-            currentCategory = cat;
-            document.getElementById('btn-novos').classList.toggle('tab-active', cat === 'novos');
-            document.getElementById('btn-seminovos').classList.toggle('tab-active', cat === 'seminovos');
-            loadModels();
-        }
-
-        function setPaymentMode(mode) {
-            currentMode = mode;
-            document.getElementById('btn-vista').classList.toggle('tab-active', mode === 'vista');
-            document.getElementById('btn-parc').classList.toggle('tab-active', mode === 'parc');
-            document.getElementById('vista-display').classList.toggle('hidden', mode === 'parc');
-            document.getElementById('parc-section').classList.toggle('hidden', mode === 'vista');
-            calculate();
-        }
-
-        function loadModels() {
-            const select = document.getElementById('model-select');
-            select.innerHTML = '';
-            
-            // Filtra os dados da planilha conforme a aba Novos ou Seminovos
-            const filtrados = dadosGlobais.filter(item => {
-                const tipo = (item.tipo || "").toString().trim().toLowerCase();
-                return tipo === currentCategory;
-            });
-
-            filtrados.forEach(item => {
-                let opt = document.createElement('option');
-                // Limpa o preço caso venha com R$ ou pontos da planilha
-                let precoLimpo = item.preco.toString().replace(/[^\d,.-]/g, '').replace(',', '.');
-                opt.value = parseFloat(precoLimpo);
-                opt.text = `${item.modelo} - ${item.capacidade}`;
-                select.add(opt);
-            });
-            calculate();
-        }
-
-        function startComparison() {
-            const select = document.getElementById('model-select');
-            comparedModel = {
-                modelo: select.options[select.selectedIndex].text,
-                modo: currentMode,
-                total: currentResult.totalFinal || currentResult.total,
-                parcelas: currentResult.parcelas || 1,
-                valorParcela: currentResult.valorParcela || currentResult.total
-            };
-            document.getElementById('comp-text').innerText = comparedModel.modelo + " (" + (comparedModel.modo === 'vista' ? 'À Vista' : comparedModel.parcelas + 'x') + ")";
-            document.getElementById('comp-info').classList.remove('hidden');
-            select.classList.add('comparison-active');
-            calculate();
-        }
-
-        function clearComparison() {
-            comparedModel = null;
-            document.getElementById('comp-info').classList.add('hidden');
-            document.getElementById('model-select').classList.remove('comparison-active');
-            calculate();
-        }
-
-        function getEntry(modelName, price) {
-            const name = modelName.toLowerCase();
-            const isSeminovo = currentCategory === 'seminovos';
-            if (name.includes("16 pro max")) return isSeminovo ? 3500 : 4500;
-            if (name.includes("16 pro")) return isSeminovo ? 3000 : 4000;
-            if (name.includes("16")) return isSeminovo ? 1800 : 2000;
-            if (price > 6000) return price * 0.5;
-            if (name.includes('15')) return 1500;
-            if (name.includes('14')) return 1300;
-            return 1000;
-        }
-
-        function calculate() {
-            const select = document.getElementById('model-select');
-            if(!select.value) return;
-
-            const precoOriginal = parseFloat(select.value);
-            const modelName = select.options[select.selectedIndex].text;
-            
-            currentResult = { modelo: modelName, categoria: currentCategory.toUpperCase() };
-
-            if(currentMode === 'vista') {
-                document.getElementById('final-cash-price').innerText = formatter.format(precoOriginal);
-                currentResult.total = precoOriginal;
-                currentResult.modo = "À VISTA (PIX)";
-                
-                document.getElementById('economy-section').classList.remove('hidden');
-                const economia = precoOriginal * 0.12;
-                document.getElementById('economy-value').innerText = formatter.format(economia);
-                setTimeout(() => document.getElementById('saving-fill').style.width = "85%", 50);
-            } else {
-                const entrada = getEntry(modelName, precoOriginal);
-                const parcelas = parseInt(document.getElementById('installments').value);
-                const saldo = precoOriginal - entrada;
-                
-                // Suas regras de taxas: 30% lucro (base) e taxas de máquina
-                let lucro = (parcelas <= 3) ? 300 : (parcelas <= 6) ? 600 : 1000;
-                const taxaMaquinaCoef = 1 + (parcelas * 0.015); 
-                const totalFinanciado = (saldo + lucro) * taxaMaquinaCoef;
-                const valorParcela = totalFinanciado / parcelas;
-
-                document.getElementById('qty-label').innerText = parcelas + 'x';
-                document.getElementById('entry-price').innerText = formatter.format(entrada);
-                document.getElementById('remainder-price').innerText = formatter.format(saldo);
-                document.getElementById('parcela-val').innerText = formatter.format(valorParcela);
-                document.getElementById('total-val').innerText = formatter.format(totalFinanciado + entrada);
-
-                currentResult.totalFinal = totalFinanciado + entrada;
-                currentResult.valorParcela = valorParcela;
-                currentResult.entrada = entrada;
-                currentResult.parcelas = parcelas;
-                currentResult.modo = "PARCELADO";
-            }
-
-            if (comparedModel) {
-                const diffTotal = (currentResult.totalFinal || currentResult.total) - comparedModel.total;
-                const diffParc = (currentResult.valorParcela || currentResult.total) - comparedModel.valorParcela;
-                
-                updateVisualDiff('diff-total-val', diffTotal, "total");
-                updateVisualDiff('diff-parc-val', diffParc, "mensal");
-            }
-        }
-
-        function updateVisualDiff(id, diff, type) {
-            const el = document.getElementById(id);
-            const isZero = Math.abs(diff) < 0.1;
-            const isNegative = diff < 0;
-
-            if (isZero) {
-                el.innerHTML = `<span class="text-gray-500 text-[10px]">Sem alteração</span>`;
-            } else {
-                const badgeClass = isNegative ? 'diff-down' : 'diff-up';
-                const prefix = isNegative ? '' : '+';
-                
-                let subText = type === "mensal" ? 
-                    (isNegative ? "Menos por mês" : "A mais por mês") : 
-                    (isNegative ? "Economia Total" : "Acréscimo no Total");
-
-                el.innerHTML = `
-                    <div class="diff-badge ${badgeClass}">${prefix}${formatter.format(Math.abs(diff))}</div>
-                    <span class="block text-[7px] text-gray-500 mt-1 uppercase font-bold tracking-tight">${subText}</span>
-                `;
-            }
-        }
-
-        function sendWhatsApp() {
-            let msg = `*MKS TECH SOLUTIONS - ORÇAMENTO*%0A%0A`;
-            msg += `*Aparelho:* ${currentResult.modelo} (${currentResult.categoria})%0A`;
-            if (comparedModel) msg += `_Comparativo Ref: ${comparedModel.modelo}_%0A`;
-            msg += `*Condição:* ${currentResult.modo}%0A%0A`;
-
-            if (currentMode === 'vista') {
-                msg += `*Valor Final:* ${formatter.format(currentResult.total)}%0A`;
-            } else {
-                msg += `*Entrada:* ${formatter.format(currentResult.entrada)}%0A`;
-                msg += `*Plano:* ${currentResult.parcelas}x de ${formatter.format(currentResult.valorParcela)}%0A`;
-                msg += `*Valor Total:* ${formatter.format(currentResult.totalFinal)}%0A`;
-            }
-            msg += `%0A_Orçamento gerado pelo Portal MKS Solutions._`;
-            window.open(`https://wa.me/555132884938?text=${msg}`, '_blank');
-        }
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
